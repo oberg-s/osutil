@@ -53,6 +53,15 @@ func Capture(call func()) ([]byte, error) {
 
 // CaptureWithCGo captures stderr and stdout as well as stderr and stdout of C of a given function call.
 func CaptureWithCGo(call func()) ([]byte, error) {
+	return captureWithCGoImpl(true, call)
+}
+
+// CaptureStdoutWithCGo captures stdout as well as stdout of C of a given function call. stderr is not redirected or captured
+func CaptureStdoutWithCGo(call func()) ([]byte, error) {
+	return captureWithCGoImpl(false, call)
+}
+// TBD, a cleaner impl would be to use two Pipes, handle stderr and stdout indepedently and return separate []byte buffers
+func captureWithCGoImpl(include_stderr bool, call func()) ([]byte, error) {
 	originalStdErr, originalStdOut := os.Stderr, os.Stdout
 	originalCStdErr, originalCStdOut := C.stderr, C.stdout
 	defer func() {
@@ -75,8 +84,12 @@ func CaptureWithCGo(call func()) ([]byte, error) {
 	}
 	defer C.fclose(f)
 
-	os.Stderr, os.Stdout = w, w
-	C.stderr, C.stdout = f, f
+	os.Stdout = w
+	C.stdout = f
+	if include_stderr {
+		os.Stderr = w
+		C.stderr = f
+	}
 
 	out := make(chan []byte)
 	go func() {
