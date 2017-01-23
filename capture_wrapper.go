@@ -15,43 +15,76 @@ import "C"
 import (
 	"fmt"
 	"testing"
-
+	"os"
 	"github.com/stretchr/testify/assert"
 )
 
+func printAll() {
+	fmt.Println("Go")
+	fmt.Fprintln(os.Stderr, "e")
+	C.printSomething()
+	C.printSomethingStderr()
+}
+
 func testCapture(t *testing.T) {
 	out, err := Capture(func() {
-		fmt.Println("Go")
-		C.printSomething()
+		printAll()
 	})
 	assert.Nil(t, err)
 
 	assert.Contains(t, string(out), "Go")
+	assert.Contains(t, string(out), "e")
 	assert.NotContains(t, string(out), "C")
+	assert.NotContains(t, string(out), "E")
+}
+
+func testCaptureStdout(t *testing.T) {
+//	out, err := Capture(func() { // trigger test failure
+	out, err := CaptureStdout(func() {
+		printAll()
+	})
+	assert.Nil(t, err)
+
+	assert.Contains(t, string(out), "Go")
+	assert.NotContains(t, string(out), "e")
+	assert.NotContains(t, string(out), "C")
+	assert.NotContains(t, string(out), "E")
+}
+
+func testCaptureStderr(t *testing.T) {
+//	out, err := Capture(func() { // trigger test failure
+	out, err := CaptureStderr(func() {
+		printAll()
+	})
+	assert.Nil(t, err)
+
+	assert.NotContains(t, string(out), "Go")
+	assert.Contains(t, string(out), "e")
+	assert.NotContains(t, string(out), "C")
+	assert.NotContains(t, string(out), "E")
 }
 
 func testCaptureWithCGo(t *testing.T) {
 	out, err := CaptureWithCGo(func() {
-		fmt.Println("Go")
-		C.printSomething()
+		printAll()
 	})
 	assert.Nil(t, err)
 
 	assert.Contains(t, string(out), "Go")
+	assert.Contains(t, string(out), "e")
 	assert.Contains(t, string(out), "C")
+	assert.Contains(t, string(out), "E")
 }
 
 func testCaptureStdoutWithCGo(t *testing.T) {
-	out, err := CaptureStdoutWithCGo(func() {
 //	out, err := CaptureWithCGo(func() {  // trigger test failure
-		fmt.Println("Go")
-		// if capturing both stderr and stdout the extra bring should would break this test
-		C.printSomethingStderr()
-		C.printSomething()
+	out, err := CaptureStdoutWithCGo(func() {
+		printAll()
 	})
 	assert.Nil(t, err)
 
 	assert.Contains(t, string(out), "Go")
-	assert.Contains(t, string(out), "C")
+	assert.NotContains(t, string(out), "e")
+	assert.Contains(t, string(out), 	"C")
 	assert.NotContains(t, string(out), "E")
 }

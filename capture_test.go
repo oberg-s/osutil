@@ -17,6 +17,28 @@ func TestCapture(t *testing.T) {
 	}
 }
 
+func TestCaptureStdout(t *testing.T) {
+	var limit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit)
+	assert.Nil(t, err)
+	//fmt.Fprintf(os.Stderr, "%v file descriptors out of a maximum of %v available\n", limit.Cur, limit.Max) 
+	// use limit.Cur or something like 1024
+	for i :=0; i <= int(limit.Cur); i++ {
+		testCaptureStdout(t)
+	}
+}
+
+func TestCaptureStderr(t *testing.T) {
+	var limit syscall.Rlimit
+	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit)
+	assert.Nil(t, err)
+	//fmt.Fprintf(os.Stderr, "%v file descriptors out of a maximum of %v available\n", limit.Cur, limit.Max) 
+	// use limit.Cur or something like 1024
+	for i :=0; i <= int(limit.Cur); i++ {
+		testCaptureStderr(t)
+	}
+}
+
 func TestCaptureWithCGo(t *testing.T) {
 	var limit syscall.Rlimit
 	err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &limit)

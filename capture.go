@@ -14,8 +14,33 @@ import (
 	"unsafe"
 )
 
+
 // Capture captures stderr and stdout of a given function call.
 func Capture(call func()) ([]byte, error) {
+	include_stdout := true
+	include_stderr := true
+	return captureImpl(include_stdout, include_stderr, call)
+}
+
+// CaptureStdout captures stdout of a given function call. stderr is not redirected or captured
+func CaptureStdout(call func()) ([]byte, error) {
+	include_stdout := true
+	include_stderr := false
+	return captureImpl(include_stdout, include_stderr, call)
+}
+
+// CaptureStderr captures stderr of a given function call. stdout is not redirected or captured
+func CaptureStderr(call func()) ([]byte, error) {
+	include_stdout := false
+	include_stderr := true
+	return captureImpl(include_stdout, include_stderr, call)
+}
+
+// Capture captures stderr and stdout of a given function call.
+func captureImpl(include_stdout bool, include_stderr bool, call func()) ([]byte, error) {
+	if !include_stdout && !include_stderr {
+		panic(errors.New("improper usage: capture without either stdout or stderr selected"))
+	}
 	originalStdErr, originalStdOut := os.Stderr, os.Stdout
 	defer func() {
 		os.Stderr, os.Stdout = originalStdErr, originalStdOut
@@ -27,7 +52,12 @@ func Capture(call func()) ([]byte, error) {
 	}
 	defer r.Close()
 
-	os.Stderr, os.Stdout = w, w
+	if include_stdout {
+		os.Stdout = w
+	}
+	if include_stderr {
+		os.Stderr = w
+	}
 
 	out := make(chan []byte)
 	go func() {
